@@ -1,0 +1,18 @@
+{% extends 'users/detail.html' %}
+{% block user_details %}
+  <h1>Update Profile</h1>
+  <form action="/users/profile" method="POST">
+    {% for field  in form %}
+      {{form.hidden_tag()}}
+      {% if field.widget.input_type != 'hidden' %}
+        {% for error in field.errors %}
+          <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+        {{field.label(class='form-label')}}
+        {{field(class='form-control')}}
+      {% endif %}
+        
+    {% endfor %}
+    <input type="submit" value="Update" class="btn btn-primary ">
+  </form>
+{% endblock %}
