@@ -40,6 +40,7 @@
 
     <div class="col-lg-6 col-md-8 col-sm-12">
       <ul class="list-group" id="messages">
+        {% set likes = g.user.likes | map(attribute='id') | list %}
         {% for msg in messages %}
           <li class="list-group-item">
             <a href="/messages/{{ msg.id  }}" class="message-link"/>

@@ -255,7 +255,28 @@ def delete_user():
 
     return redirect("/signup")
 
+@app.route('/users/add_like/<int:message_id>', methods=['POST'])
+def toggle_like(message_id: int):
+    if not g.user:
+        return redirect('/')
+    if message_id in [message.id for message in g.user.messages]:
+        return redirect('/')
+    if message_id in [message.id for message in g.user.likes]:
+        message = [m for m in g.user.likes if m.id == message_id][0]
+        g.user.likes.remove(message)
+        flash(f'You just unlike wrabler #{message.id}', 'info')
 
+    else:
+        message = Message.query.get(message_id)
+        g.user.likes.append(message)
+        flash(f'You just like wrabler #{message.id}', 'success')
+    db.session.commit()
+    return redirect('/')
+
+@app.route('/users/<int:user_id>/likes')
+def users_likes(user_id):
+    user = User.query.get_or_404(user_id)
+    return render_template('users/likes.html', user=user, messages=user.likes)
 ##############################################################################
 # Messages routes:
 
