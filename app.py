@@ -24,7 +24,9 @@ toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
-
+@app.before_request
+def add_message_form_across_requests():
+    g.message_form = MessageForm()
 ##############################################################################
 # User signup/login/logout
 
