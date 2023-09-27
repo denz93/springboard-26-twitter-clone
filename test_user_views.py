@@ -54,9 +54,7 @@ class UserViewTest(TestCase):
   def test_disallow_seeing_following_follower(self):
     with app.test_client() as client:
       res = client.get(f'/users/{self.user_id}/following', follow_redirects=True)
-      self.assertEqual(len(res.history), 1)
-      self.assertEqual(res.request.path, '/')
+      self.assertEqual(res.status_code, 401)
       res = client.get(f'/users/{self.user_id}/followers', follow_redirects=True)
-      self.assertEqual(len(res.history), 1)
-      self.assertEqual(res.request.path, '/')
+      self.assertEqual(res.status_code, 401)
 

@@ -96,9 +96,7 @@ class MessageViewTestCase(TestCase):
 
         with self.client as client:
             res = client.post('/messages/new', data={"text": "Hello"})
-            self.assertEqual(res.status_code, 302)
-            self.assertEqual(res.location, '/')
+            self.assertEqual(res.status_code, 401)
 
             res = client.post(f'/messages/{msg_id}/delete')
-            self.assertEqual(res.status_code, 302)
-            self.assertEqual(res.location, '/')
+            self.assertEqual(res.status_code, 401)
