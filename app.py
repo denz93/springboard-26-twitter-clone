@@ -5,6 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy import or_
 from auth import auth
+from forms import ChangePasswordForm, ProfileForm, UserAddForm, LoginForm, MessageForm
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -16,8 +17,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = (
     os.environ.get('DATABASE_URL', 'postgresql:///warbler'))
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ECHO'] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['SQLALCHEMY_ECHO'] = bool(os.environ.get('SQLALCHEMY_ECHO', False))
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
@@ -28,6 +29,26 @@ connect_db(app)
 def add_message_form_across_requests():
     g.message_form = MessageForm()
 ##############################################################################
+# User change password
+@app.route('/change-password', methods=['GET', 'POST'])
+@auth()
+def change_password():
+    form = ChangePasswordForm(g.user)
+    if not form.is_submitted():
+        return render_template('users/change_password.html', form=form)
+    
+    user: User = g.user
+    if form.validate():
+        user.update_password(form.new_password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash('Your password has been updated!', 'success')
+        return render_template('users/change_password.html', form=form)
+
+    
+    return render_template('users/change_password.html', form=form), 404
+     
+    
 # User signup/login/logout
 
 

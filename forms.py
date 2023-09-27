@@ -1,7 +1,14 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, TextAreaField
+from wtforms import StringField, PasswordField, TextAreaField, ValidationError
 from wtforms.validators import DataRequired, Email, Length
 
+from models import User
+
+def MatchValidator(target_field_name, msg):
+    def MatchValidator(form: FlaskForm, field):
+        if field.data != getattr(form, target_field_name).data:
+            raise ValidationError(msg)
+    return MatchValidator
 
 class MessageForm(FlaskForm):
     """Form for adding/editing messages."""
@@ -34,3 +41,17 @@ class ProfileForm(FlaskForm):
     bio = StringField('Biography', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
 
+class ChangePasswordForm(FlaskForm):
+    """Form for changing password"""
+    def __init__(self, user: User, **kwargs):
+        self.user = user 
+        super().__init__(**kwargs)
+
+    current_password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[Length(min=6)])
+    retype_password = PasswordField('Retype New Password', validators=[MatchValidator('new_password', 'New password and Retype new password should match'), Length(min=6)])
+    def validate_current_password(self, *args, **kwargs):
+        print('VALIDATE PASSWORD')
+        user: User = self.user
+        if not user.authenticate(user.username, self.current_password.data):
+            raise ValidationError('Current password is incorrect')
