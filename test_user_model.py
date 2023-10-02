@@ -37,9 +37,8 @@ class UserModelTestCase(TestCase):
     def setUp(self):
         """Create test client, add sample data."""
         with app.app_context():
-            User.query.delete()
-            Message.query.delete()
-            Follows.query.delete()
+            db.drop_all()
+            db.create_all()
             db.session.commit()
         self.client = app.test_client()
 
