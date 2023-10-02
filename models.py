@@ -4,10 +4,11 @@ from datetime import datetime
 
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 bcrypt = Bcrypt()
 db = SQLAlchemy()
-
+migrate = Migrate(db)
 
 class Follows(db.Model):
     """Connection of a follower <-> followed_user."""
@@ -283,3 +284,4 @@ def connect_db(app):
 
     db.app = app
     db.init_app(app)
+    migrate.init_app(app, db)
