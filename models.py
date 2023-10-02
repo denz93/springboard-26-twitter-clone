@@ -116,6 +116,11 @@ class User(db.Model):
         secondary="likes"
     )
 
+    is_private = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
 
@@ -134,6 +139,62 @@ class User(db.Model):
     def update_password(self, new_password):
         """Update password for user."""
         self.password = bcrypt.generate_password_hash(new_password).decode('UTF-8')
+
+    def follow(self, user: 'User'):
+        if self.is_following(user):
+            return False
+        elif user.is_private:
+            has_pending_request = FollowRequest\
+                .query\
+                .filter(
+                    FollowRequest.user_being_followed_id==user.id, 
+                    FollowRequest.user_follow_id==self.id, 
+                    FollowRequest.status=='pending')\
+                .first()
+            
+            if not has_pending_request:
+                req = FollowRequest(
+                    user_being_followed_id=user.id, 
+                    user_follow_id=self.id)
+                db.session.add(req)
+                db.session.commit()
+            return True
+        else:
+            self.following.append(user)
+            db.session.commit()
+            return True
+    def accept_request(self, request_id):
+        req: FollowRequest = db.session.query(FollowRequest).filter(
+            FollowRequest.id == request_id, 
+            FollowRequest.user_being_followed_id == self.id, 
+            FollowRequest.status == 'pending').first()
+        if not req:
+            return False 
+        req.status = 'accepted'
+        self.followers.append(req.requester)
+        db.session.commit()
+        return True
+    def deny_request(self, request_id):
+        req: FollowRequest = db.session.query(FollowRequest).filter(
+            FollowRequest.id == request_id, 
+            FollowRequest.user_being_followed_id == self.id, 
+            FollowRequest.status == 'pending').first()
+        if not req:
+            return False 
+        req.status = 'denied'
+        db.session.commit()
+        return True
+    def cancel_request(self, request_id):
+        req: FollowRequest = db.session.query(FollowRequest).filter(
+            FollowRequest.id == request_id, 
+            FollowRequest.user_follow_id == self.id, 
+            FollowRequest.status == 'pending').first()
+        if not req:
+            return False 
+        req.status = 'canceled'
+        db.session.commit()
+        return True
+
     @classmethod
     def signup(cls, username, email, password, image_url):
         """Sign up user.
@@ -202,6 +263,16 @@ class Message(db.Model):
     )
 
     user = db.relationship('User', back_populates='messages')
+
+class FollowRequest(db.Model):
+    __tablename__ = 'follow_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_being_followed_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'))
+    user_follow_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    requester = db.relationship('User', backref="awaiting_requests", foreign_keys=[user_follow_id])
+    requestee = db.relationship('User', foreign_keys=[user_being_followed_id], backref="pending_requests")
+    status = db.Column(db.String, default='pending')
 
 
 def connect_db(app):

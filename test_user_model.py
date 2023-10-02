@@ -8,7 +8,7 @@
 import os
 from unittest import TestCase
 
-from models import db, User, Message, Follows
+from models import FollowRequest, db, User, Message, Follows
 from sqlalchemy.exc import IntegrityError
 from flask_bcrypt import Bcrypt
 # BEFORE we import our app, let's set an environmental variable
@@ -164,4 +164,116 @@ class UserModelTestCase(TestCase):
 
             bad_password_user = User.authenticate('demo', '123123123')
             self.assertEqual(bad_password_user, False)
-        
+    def test_follow_private_user(self):
+        with app.app_context():
+            private_user = User(
+                username='test1',
+                email='test1@gmail.com',
+                password='HASHED_PASSWORD',
+                is_private=True
+            )
+            normal_user = User(
+                username='test2',
+                email='test2@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            db.session.add(private_user)
+            db.session.add(normal_user)
+            db.session.commit()
+
+            success = normal_user.follow(private_user)
+            self.assertEqual(success, True)
+            
+            req = db.session.query(FollowRequest).filter(
+                FollowRequest.user_being_followed_id == private_user.id,
+                FollowRequest.user_follow_id == normal_user.id,
+                FollowRequest.status == 'pending'
+            ).first()
+            self.assertIsNotNone(req)
+    def test_accept_follow_request(self):
+        with app.app_context():
+            private_user = User(
+                username='test1',
+                email='test1@gmail.com',
+                password='HASHED_PASSWORD',
+                is_private=True
+            )
+            normal_user = User(
+                username='test2',
+                email='test2@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            db.session.add(private_user)
+            db.session.add(normal_user)
+            db.session.commit()
+
+            normal_user.follow(private_user)
+            
+            req = db.session.query(FollowRequest).filter(
+                FollowRequest.requestee == private_user,
+                FollowRequest.requester == normal_user,
+                FollowRequest.status == 'pending'
+            ).first()
+
+            result = private_user.accept_request(req.id)
+
+            self.assertEqual(result, True)
+            self.assertIn(normal_user, private_user.followers)
+            self.assertIn(private_user, normal_user.following)
+            self.assertEqual(req.status, 'accepted')
+
+    def test_deny_follow_request(self):
+        with app.app_context():
+            private_user = User(
+                username='test1',
+                email='test1@gmail.com',
+                password='HASHED_PASSWORD',
+                is_private=True
+            )
+            normal_user = User(
+                username='test2',
+                email='test2@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            db.session.add(private_user)
+            db.session.add(normal_user)
+            db.session.commit()
+
+            normal_user.follow(private_user)
+            
+            req = db.session.query(FollowRequest).filter(
+                FollowRequest.requestee == private_user,
+            ).first()
+            result = private_user.deny_request(req.id)
+            self.assertEqual(result, True)
+            self.assertNotIn(normal_user, private_user.followers)
+            self.assertNotIn(private_user, normal_user.following)
+            self.assertEqual(req.status, 'denied')
+    def test_cancel_follow_request(self):
+        with app.app_context():
+            private_user = User(
+                username='test1',
+                email='test1@gmail.com',
+                password='HASHED_PASSWORD',
+                is_private=True
+            )
+            normal_user = User(
+                username='test2',
+                email='test2@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            db.session.add(private_user)
+            db.session.add(normal_user)
+            db.session.commit()
+
+            normal_user.follow(private_user)
+
+            req = db.session.query(FollowRequest).filter(
+                FollowRequest.requestee == private_user,
+            ).first()
+            result = normal_user.cancel_request(req.id)
+            self.assertEqual(result, True)
+            self.assertNotIn(normal_user, private_user.followers)
+            self.assertNotIn(private_user, normal_user.following)
+            self.assertEqual(req.status, 'canceled')
+    

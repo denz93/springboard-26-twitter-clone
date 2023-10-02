@@ -2,6 +2,27 @@
 
 {% block user_details %}
   <div class="col-sm-9">
+    {% if g.user.id == user.id %}
+      
+      <div class="row">
+        <div class="col-12 ">
+          {% for request in g.user.pending_requests %}
+            <div class="small alert alert-info ">
+              You've received a follow request from 
+              <a href="{{url_for('users_show', user_id=request.requester.id)}}" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">@{{request.requester.username}}</a>
+              <span class="fw-light fst-italic opacity-50">{{request.created_at | get_age}} ago</span>
+              <span class="badge bg-{{'danger' if request.status == 'canceled' else 'success' if request.status == 'accepted' else 'info'}}">{{request.status}}</span>
+              {% if request.status == 'pending' %}
+                <form action="" class="mt-1">
+                  <button formaction="{{url_for('deny_follow_request', request_id=request.id)}}" formmethod="POST" class="btn btn-sm btn-outline-danger">Deny</button>
+                  <button formaction="{{url_for('accept_follow_request', request_id=request.id)}}" formmethod="POST" class="btn btn-sm btn-outline-success">Accept</button>
+                </form>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
     <div class="row">
 
       {% for follower in user.followers %}

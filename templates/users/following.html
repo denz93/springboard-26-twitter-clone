@@ -1,10 +1,28 @@
 {% extends 'users/detail.html' %}
 {% block user_details %}
   <div class="col-sm-9">
+    {% if g.user.id == user.id %}
+      
+      <div class="row">
+        {% for request in g.user.awaiting_requests %}
+        <div class="col-12 alert alert-info">
+          <div class="d-flex gap-2 align-items-center ">
+            <div class="small">You has sent a follow request to {{request.requestee.username}}</div>
+            <span class="fst-italic fw-light small">{{request.created_at | get_age}} ago</span>
+            {% if request.status == 'pending' %}
+              <form method="POST" action="{{url_for('cancel_follow_request', request_id=request.id)}}">
+                <button class="btn btn-outline-danger btn-sm ">Cancel</button>
+              </form>
+            {% else %}
+              <span class="badge bg-{{'danger' if request.status == 'canceled' else 'info'}}">{{request.status}}</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
     <div class="row">
-
       {% for followed_user in user.following %}
-
         <div class="col-lg-4 col-md-6 col-12">
           <div class="card user-card">
             <div class="card-inner">

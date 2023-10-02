@@ -1,11 +1,12 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g
+from flask import Flask, render_template, request, flash, redirect, session, g, url_for
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy import or_
 from auth import auth
 from forms import ChangePasswordForm, ProfileForm, UserAddForm, LoginForm, MessageForm
+from libs.time_relative import get_age
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -19,12 +20,22 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SQLALCHEMY_ECHO'] = bool(os.environ.get('SQLALCHEMY_ECHO', False))
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
+##############################################################################
+# add custom filter to jinja
+app.jinja_env.filters['get_age'] = get_age
+
+##############################################################################
+# flask helpers
+def prohibit(message):
+    return render_template('prohibited.html', message=message), 403
+
+# bind MessageForm to g
 @app.before_request
 def add_message_form_across_requests():
     g.message_form = MessageForm()
@@ -58,7 +69,7 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
-
+        print(g.user.awaiting_requests)
     else:
         g.user = None
 
@@ -201,10 +212,9 @@ def users_followers(user_id):
 def add_follow(follow_id):
     """Add a follow for the currently-logged-in user."""
 
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.append(followed_user)
-    db.session.commit()
+    followed_user: User = User.query.get_or_404(follow_id)
 
+    g.user.follow(followed_user)
     return redirect(f"/users/{g.user.id}/following")
 
 
@@ -281,6 +291,48 @@ def toggle_like(message_id: int):
 def users_likes(user_id):
     user = User.query.get_or_404(user_id)
     return render_template('users/likes.html', user=user, messages=user.likes)
+
+@app.route('/users/<int:user_id>/change-status', methods=["POST"])
+@auth()
+def user_change_status(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id != g.user.id:
+        return prohibit('You can only change your own status.')
+    
+    user.is_private = request.form.get('is_private', False) in ('y', 'yes', 'True', 'true')
+    db.session.commit()
+
+    return redirect(f'/users/{user.id}')
+@app.route('/follow-request/<int:request_id>/cancel', methods=["POST"])
+@auth()
+def cancel_follow_request(request_id):
+    user:User = g.user
+    result = user.cancel_request(request_id)
+    if result:
+        flash(f'Follow request canceled', 'success')
+    else:
+        flash(f'Follow request could not be canceled', 'danger')
+    return redirect(url_for('show_following', user_id=user.id))
+@app.route('/follow-request/<int:request_id>/accept', methods=["POST"])
+@auth()
+def accept_follow_request(request_id):
+    user:User = g.user
+    result = user.accept_request(request_id)
+    if result:
+        flash(f'Follow request accepted', 'success')
+    else:
+        flash(f'Follow request could not be accepted', 'danger')
+    return redirect(url_for('users_followers', user_id=user.id)) 
+@app.route('/follow-request/<int:request_id>/deny', methods=["POST"])
+@auth()
+def deny_follow_request(request_id):
+    user:User = g.user
+    result = user.deny_request(request_id)
+    if result:
+        flash(f'Follow request denied', 'success')
+    else:
+        flash(f'Follow request could not be denied', 'danger')
+    return redirect(url_for('users_followers', user_id=user.id))
 ##############################################################################
 # Messages routes:
 

@@ -18,13 +18,31 @@
             </h4>
           </li>
           <li class="stat">
-            <p class="small">Following</p>
+            <p class="small position-relative ">
+              Following
+              {% set total_awatings = (g.user.awaiting_requests | selectattr("status", "eq", "pending")) | list | length %}
+              {% if total_awatings > 0 %}
+                <span style="margin-top: -4px;" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  <span>{{ total_awatings }}</span>
+                  <span class="visually-hidden">waiting requests</span>
+                </span>
+              {% endif %}
+            </p>
             <h4>
               <a href="/users/{{ user.id }}/following">{{ user.following | length }}</a>
             </h4>
           </li>
           <li class="stat">
-            <p class="small">Followers</p>
+            <p class="small position-relative ">
+              Followers
+              {% set total_pendings = (g.user.pending_requests | selectattr("status", "eq", "pending")) | list | length %}
+              {% if total_pendings > 0 %} 
+                <span style="margin-top: -4px;" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  <span>{{ total_pendings }}</span>
+                  <span class="visually-hidden">pending requests</span>
+                </span>
+              {% endif %}
+            </p>
             <h4>
               <a href="/users/{{ user.id }}/followers">{{ user.followers | length }}</a>
             </h4>
@@ -35,22 +53,22 @@
           </li>
           <div class="ml-auto gap-2">
             {% if g.user.id == user.id %}
-            <a href="/users/profile" class="btn btn-outline-secondary">Edit Profile</a>
+            <a href="/users/profile" class="btn btn-sm btn-outline-secondary">Edit Profile</a>
             <form method="POST" action="/users/delete" class="form-inline">
-              <button class="btn btn-outline-danger ml-2">Delete Profile</button>
+              <button class="btn btn-sm btn-outline-danger ml-2">Delete Profile</button>
             </form>
-            <a href="{{url_for('change_password')}}" class="btn btn-outline-secondary">Update Password</a>
+            <a href="{{url_for('change_password')}}" class="btn btn-sm btn-outline-secondary">Update Password</a>
 
             {% elif g.user %}
-            {% if g.user.is_following(user) %}
-            <form method="POST" action="/users/stop-following/{{ user.id }}">
-              <button class="btn btn-primary">Unfollow</button>
-            </form>
-            {% else %}
-            <form method="POST" action="/users/follow/{{ user.id }}">
-              <button class="btn btn-outline-primary">Follow</button>
-            </form>
-            {% endif %}
+              {% if g.user.is_following(user) %}
+              <form method="POST" action="/users/stop-following/{{ user.id }}">
+                <button class="btn btn-sm btn-primary">Unfollow</button>
+              </form>
+              {% else %}
+              <form method="POST" action="/users/follow/{{ user.id }}">
+                <button class="btn btn-sm btn-outline-primary">Follow</button>
+              </form>
+              {% endif %}
             {% endif %}
           </div>
         </ul>
@@ -61,9 +79,28 @@
 
 <div class="row">
   <div class="col-sm-3">
-    <h4 id="sidebar-username">@{{ user.username }}</h4>
-    <p>{{ user.bio }}</p>
-    <p class="user-location"><span class="fa fa-map-marker"></span>{{user.location}}</p>
+    <h4 id="sidebar-username">@{{ user.username }} 
+      {% if user.is_private %}
+      <span class="badge text-bg-danger ms-1">private</span>
+      {% else %}
+      <span class="badge text-bg-success ms-1">public</span>
+      {% endif %}
+    </h4>
+    {% if user.bio %}
+      <p>{{ user.bio }}</p>
+    {% else %}
+      <p class="fst-italic text-secondary  ">Bio is empty</p>
+    {% endif %}
+    <p class="user-location"><span class="fa fa-map-marker me-1"></span>
+      {{user.location if user.location else 'No location provided'}}
+    </p>
+    {% if g.user.id == user.id %}
+      
+      <form action="{{url_for('user_change_status', user_id=g.user.id)}}" method="POST">
+        <input type="hidden" name="is_private" value="{{not g.user.is_private}}">
+        <input type="submit" class="btn btn-sm  btn-outline-{{'danger' if not g.user.is_private else 'success'}}" value="{{ 'Go private' if not g.user.is_private else 'Go public'}}">
+      </form>
+    {% endif %}
   </div>
 
   {% block user_details %}
