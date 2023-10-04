@@ -6,6 +6,7 @@
 # <zh.jesse@gmail.com>
 #
 from datetime import datetime
+import math
 
 def get_age(date):
     '''Take a datetime and return its "age" as a string.
@@ -30,7 +31,7 @@ def get_age(date):
 
     class PrettyDelta:
         def __init__(self, dt):
-            now = datetime.now()
+            now = datetime.utcnow()
             delta = now - dt
             self.day = delta.days
             self.second = delta.seconds
@@ -43,7 +44,7 @@ def get_age(date):
         def format(self):
             for period in ['year', 'month', 'day', 'hour', 'minute', 'second']:
                 n = getattr(self, period)
-                if n > 0:
+                if math.floor(n) > 0:
                     return formatn(n, period)
             return "0 second"
 
