@@ -45,19 +45,19 @@ def add_message_form_across_requests():
 @auth()
 def change_password():
     form = ChangePasswordForm(g.user)
-    if not form.is_submitted():
-        return render_template('users/change_password.html', form=form)
-    
     user: User = g.user
+    if not form.is_submitted():
+        return render_template('users/change_password.html', form=form, user=user)
+    
     if form.validate():
         user.update_password(form.new_password.data)
         db.session.add(user)
         db.session.commit()
         flash('Your password has been updated!', 'success')
-        return render_template('users/change_password.html', form=form)
+        return render_template('users/change_password.html', form=form, user=user)
 
     
-    return render_template('users/change_password.html', form=form), 404
+    return render_template('users/change_password.html', form=form, user=user), 404
      
     
 # User signup/login/logout
