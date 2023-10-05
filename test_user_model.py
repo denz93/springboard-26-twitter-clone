@@ -276,3 +276,61 @@ class UserModelTestCase(TestCase):
             self.assertNotIn(private_user, normal_user.following)
             self.assertEqual(req.status, 'canceled')
     
+    def test_block_user(self):
+        with app.app_context():
+            user1 = User(
+                username='test1',
+                email='test1@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            user2 = User(
+                username='test2',
+                email='test2@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            db.session.add(user1)
+            db.session.add(user2)
+            db.session.commit()
+
+            user1.block(user2)
+            self.assertIn(user2, user1.blocked_users)
+            self.assertIn(user1, user2.blocking_users)
+    def test_prevent_block_same_user(self):
+        with app.app_context():
+            user1 = User(
+                username='test1',
+                email='test1@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            db.session.add(user1)
+            db.session.commit()
+
+            result = user1.block(user1)
+            self.assertEqual(result, False)
+            self.assertNotIn(user1, user1.blocked_users)
+            self.assertNotIn(user1, user1.blocking_users)
+    def test_unblock_user(self):
+        with app.app_context():
+            user1 = User(
+                username='test1',
+                email='test1@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            user2 = User(
+                username='test2',
+                email='test2@gmail.com',
+                password='HASHED_PASSWORD'
+            )
+            db.session.add(user1)
+            db.session.add(user2)
+            db.session.commit()
+
+            user1.block(user2)
+           
+            user1.unblock(user2)
+            self.assertNotIn(user2, user1.blocked_users)
+            self.assertNotIn(user1, user2.blocking_users)
+            
+
+
+
