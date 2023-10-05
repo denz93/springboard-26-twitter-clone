@@ -333,6 +333,30 @@ def deny_follow_request(request_id):
     else:
         flash(f'Follow request could not be denied', 'danger')
     return redirect(url_for('users_followers', user_id=user.id))
+
+@app.route('/users/<int:user_id>/block', methods=["POST"])
+@auth()
+def block_user(user_id):
+    user:User = g.user
+    target_user = User.query.get_or_404(user_id)
+    result = user.block(target_user)
+    if result:
+        flash(f'You\'ve blocked @{target_user.username}', 'success')
+    else:
+        flash(f'User @{target_user.username} could not be blocked', 'danger')
+    return redirect(url_for('users_show', user_id=target_user.id))
+@app.route('/users/<int:user_id>/unblock', methods=["POST"])
+@auth()
+def unblock_user(user_id):
+    user:User = g.user
+    target_user = User.query.get_or_404(user_id)
+    result = user.unblock(target_user)
+    if result:
+        flash(f'You\'ve unblocked @{target_user.username}', 'success')
+    else:
+        flash(f'User @{target_user.username} could not be unblocked', 'danger')
+    return redirect(url_for('users_show', user_id=target_user.id))
+
 ##############################################################################
 # Messages routes:
 

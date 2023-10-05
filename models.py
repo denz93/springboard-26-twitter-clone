@@ -49,6 +49,10 @@ class Likes(db.Model):
         unique=True
     )
 
+class Blocking(db.Model):
+    __tablename__ = 'blocks'
+    blocker_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'), primary_key=True)
+    blockee_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'), primary_key=True)
 
 class User(db.Model):
     """User in the system."""
@@ -122,6 +126,22 @@ class User(db.Model):
         nullable=False,
         default=False
     )
+
+    blocking_users = db.relationship(
+        "User",
+        secondary="blocks",
+        primaryjoin=(Blocking.blockee_id == id),
+        secondaryjoin=(Blocking.blocker_id == id),
+        back_populates='blocked_users'
+    )
+    blocked_users = db.relationship(
+        "User",
+        secondary="blocks",
+        primaryjoin=(Blocking.blocker_id == id),
+        secondaryjoin=(Blocking.blockee_id == id),
+        back_populates='blocking_users'
+    )
+
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
 
@@ -194,6 +214,24 @@ class User(db.Model):
             return False 
         req.status = 'canceled'
         db.session.commit()
+        return True
+
+    def block(self, user: 'User'):
+        if self.id == user.id:
+            return False
+        if user not in self.blocked_users:
+            self.blocked_users.append(user)
+            db.session.commit()
+            return True
+        return False
+    
+    def unblock(self, user: 'User'):
+        if self.id == user.id:
+            return False
+        if user in self.blocked_users:
+            self.blocked_users.remove(user)
+            db.session.commit()
+            return True
         return True
 
     @classmethod
