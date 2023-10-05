@@ -272,8 +272,6 @@ def delete_user():
 @app.route('/users/add_like/<int:message_id>', methods=['POST'])
 @auth()
 def toggle_like(message_id: int):
-    if message_id in [message.id for message in g.user.messages]:
-        return redirect('/')
     if message_id in [message.id for message in g.user.likes]:
         message = [m for m in g.user.likes if m.id == message_id][0]
         g.user.likes.remove(message)
