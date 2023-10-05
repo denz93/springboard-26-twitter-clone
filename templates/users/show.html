@@ -1,28 +1,14 @@
 {% extends 'users/detail.html' %}
 {% block user_details %}
-  <div class="col-sm-6">
-    {% if g.user.id == user.id or g.user.is_following(user) or not user.is_private %}
+  <div class="col-md-6">
+    {% if g.user.id == user.id or g.user.is_following(user) or not user.is_private and (g.user not in user.blocked_users and user not in g.user.blocked_users)  %}
       <ul class="list-group" id="messages">
-
         {% for message in messages %}
-
-          <li class="list-group-item">
-            <a href="/messages/{{ message.id }}" class="message-link"/>
-
-            <a href="/users/{{ user.id }}">
-              <img src="{{ user.image_url }}" alt="user image" class="timeline-image">
-            </a>
-
-            <div class="message-area">
-              <a href="/users/{{ user.id }}">@{{ user.username }}</a>
-              <span class="text-muted">{{ message.timestamp.strftime('%d %B %Y') }}</span>
-              <p>{{ message.text }}</p>
-            </div>
-          </li>
-
+          {% include 'common/message.fragment.html' ignore missing with context %}
         {% endfor %}
-
       </ul>
+    {% else %}
+      <p class="fst-italic opacity-50">You can't see this user's messages</p>
     {% endif %}
   </div>
 {% endblock %}

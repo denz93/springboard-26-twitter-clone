@@ -7,7 +7,7 @@
         {% for request in g.user.awaiting_requests %}
         <div class="col-12 alert alert-info">
           <div class="d-flex gap-2 align-items-center ">
-            <div class="small">You has sent a follow request to {{request.requestee.username}}</div>
+            <div class="small">You has sent a follow request to <a href="{{url_for('users_show', user_id=request.requestee.id)}}">@{{request.requestee.username}}</a></div>
             <span class="fst-italic fw-light small">{{request.created_at | get_age}} ago</span>
             {% if request.status == 'pending' %}
               <form method="POST" action="{{url_for('cancel_follow_request', request_id=request.id)}}">
@@ -22,36 +22,41 @@
       </div>
     {% endif %}
     <div class="row">
-      {% for followed_user in user.following %}
-        <div class="col-lg-4 col-md-6 col-12">
-          <div class="card user-card">
-            <div class="card-inner">
-              <div class="image-wrapper">
-                <img src="{{ followed_user.header_image_url }}" alt="" class="card-hero">
-              </div>
-              <div class="card-contents">
-                <a href="/users/{{ followed_user.id }}" class="card-link">
-                  <img src="{{ followed_user.image_url }}" alt="Image for {{ followed_user.username }}" class="card-image">
-                  <p>@{{ followed_user.username }}</p>
-                </a>
-                {% if g.user.is_following(followed_user) %}
-                  <form method="POST"
-                        action="/users/stop-following/{{ followed_user.id }}">
-                    <button class="btn btn-primary btn-sm">Unfollow</button>
-                  </form>
-                {% else %}
-                  <form method="POST" action="/users/follow/{{ followed_user.id }}">
-                    <button class="btn btn-outline-primary btn-sm">Follow</button>
-                  </form>
-                {% endif %}
+      {% if user not in g.user.blocked_users and g.user not in user.blocked_users %}
+        
+        {% for followed_user in user.following %}
+          <div class="col-lg-4 col-md-6 col-12">
+            <div class="card user-card">
+              <div class="card-inner">
+                <div class="image-wrapper">
+                  <img src="{{ followed_user.header_image_url }}" alt="" class="card-hero">
+                </div>
+                <div class="card-contents">
+                  <a href="/users/{{ followed_user.id }}" class="card-link">
+                    <img src="{{ followed_user.image_url }}" alt="Image for {{ followed_user.username }}" class="card-image">
+                    <p>@{{ followed_user.username }}</p>
+                  </a>
+                  {% if g.user.is_following(followed_user) %}
+                    <form method="POST"
+                          action="/users/stop-following/{{ followed_user.id }}">
+                      <button class="btn btn-primary btn-sm">Unfollow</button>
+                    </form>
+                  {% else %}
+                    <form method="POST" action="/users/follow/{{ followed_user.id }}">
+                      <button class="btn btn-outline-primary btn-sm">Follow</button>
+                    </form>
+                  {% endif %}
 
+                </div>
+                <p class="card-bio">{{followed_user.bio}}</p>
               </div>
-              <p class="card-bio">{{followed_user.bio}}</p>
             </div>
           </div>
-        </div>
 
-      {% endfor %}
+        {% endfor %}
+      {% else %}
+        <p class="fst-italic opacity-50">You can't see this user's following</p>
+      {% endif %}
 
     </div>
   </div>

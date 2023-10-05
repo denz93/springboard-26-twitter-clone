@@ -27,6 +27,7 @@
       </a>
     </div>
     <ul class="nav navbar-nav navbar-right">
+
       {% if request.endpoint != None %}
       <li>
         <form class="navbar-form navbar-right" action="/users">
@@ -37,21 +38,39 @@
         </form>
       </li>
       {% endif %}
-      {% if not g.user %}
-      <li><a href="/signup">Sign up</a></li>
-      <li><a href="/login">Log in</a></li>
-      {% else %}
-      <li>
-        <a href="/users/{{ g.user.id }}">
-          <img src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
-        </a>
-      </li>
-      <li>
-        <button class="btn btn-outline-success btn-sm " type="button" data-bs-toggle="modal" data-bs-target="#myModal">New Message</button>
+      <nav class="smart-nav d-flex align-items-center"
+      >
+      <button 
+      class="smart-nav__toggle btn btn-default btn-sm" 
+      onclick="this.parentElement.querySelector('.smart-nav__menu').classList.toggle('expanded')"
+      >
+      <i class="fa fa-bars"></i>
+    </button>
+    <ul class="smart-nav__menu"
+      onblur="this.classList.remove('expanded')"
+      tabindex="1"
+      onclick="
+        event.target != this && this.classList.remove('expanded')
+      "
+        >
+          {% if not g.user %}
+          <li><a href="/signup">Sign up</a></li>
+          <li><a href="/login">Log in</a></li>
+          {% else %}
+          <li>
+            <a href="/users/{{ g.user.id }}" class="img-icon">
+              <img src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
+            </a>
+          </li>
+          <li>
+            <button class="btn btn-outline-success btn-sm " type="button" data-bs-toggle="modal" data-bs-target="#myModal">New Message</button>
+    
+          </li>
+          <li><a href="/logout">Log out</a></li>
+          {% endif %}
+        </ul>        
 
-      </li>
-      <li><a href="/logout">Log out</a></li>
-      {% endif %}
+      </nav>
     </ul>
   </div>
 </nav>
@@ -65,11 +84,11 @@
 
 </div>
 
-<div class="modal" tabindex="-1" id="myModal">
-  <div class="modal-dialog">
+<div style="z-index: 99999;" class="modal fade " tabindex="-1" id="myModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog mt-5">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Create new Wrabler</h5>
+        <h5 class="modal-title" id="staticBackdropLabel">Create new Wrabler</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
