@@ -1,4 +1,6 @@
+from datetime import datetime, timedelta
 import os
+import bcrypt
 
 from flask import Flask, render_template, request, flash, redirect, session, g, url_for
 from flask_debugtoolbar import DebugToolbarExtension
@@ -8,6 +10,7 @@ from auth import auth
 from forms import ChangePasswordForm, ProfileForm, UserAddForm, LoginForm, MessageForm
 from libs.time_relative import get_age
 from models import db, connect_db, User, Message
+from seed import seed
 
 CURR_USER_KEY = "curr_user"
 
@@ -15,6 +18,7 @@ app = Flask(__name__)
 
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
+ENV = os.getenv('ENV', 'DEV')
 app.config['SQLALCHEMY_DATABASE_URI'] = (
     os.environ.get('DATABASE_URL', 'postgresql:///warbler'))
 
@@ -22,7 +26,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SQLALCHEMY_ECHO'] = bool(os.environ.get('SQLALCHEMY_ECHO', False))
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
-toolbar = DebugToolbarExtension(app)
+if ENV == 'DEV':
+    toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
@@ -441,3 +446,16 @@ def add_header(req):
     req.headers["Expires"] = "0"
     req.headers['Cache-Control'] = 'public, max-age=0'
     return req
+
+##############################################################################
+# Secret route for seeding
+@app.post('/seed')
+def seed_route():
+    """Seeds the database."""
+    password = request.get_json().get('password', '')
+    PW = '$2b$12$MpLwNiNlwAi7Gc38nsSHjOHSDFroaFqt7HQdWYxSPG1NIi8ka/oMy'.encode('utf-8')
+    is_valid = bcrypt.checkpw(password.encode('utf-8'), PW)
+
+    if is_valid:
+        seed()
+    return 'OK', 200
